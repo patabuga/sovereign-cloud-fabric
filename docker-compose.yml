@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  terraform:
+    image: hashicorp/terraform:latest
+    container_name: vsp_iac_terraform
+    volumes:
+      - ./terraform:/workspace
+      - terraform_state:/workspace/.terraform
+    working_dir: /workspace
+    networks:
+      - vsp_iac_net
+
+  web:
+    image: nginx:alpine
+    container_name: vsp_iac_web
+    ports:
+      - "3002:80"
+    volumes:
+      - ./web:/usr/share/nginx/html:ro
+    networks:
+      - vsp_iac_net
+
+networks:
+  vsp_iac_net:
+    driver: bridge
+
+volumes:
+  terraform_state:

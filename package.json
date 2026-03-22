@@ -1,0 +1,38 @@
+{
+  "name": "@vspatabuga/porto-iac",
+  "version": "1.0.0",
+  "description": "VSP Multi-Cloud IaC Simulation - Terraform Infrastructure",
+  "type": "module",
+  "main": "simulate.sh",
+  "bin": {
+    "vsp-porto-iac": "./simulate.sh"
+  },
+  "scripts": {
+    "simulate": "bash simulate.sh",
+    "start": "bash simulate.sh",
+    "stop": "docker compose -p vsp-iac down",
+    "clean": "docker compose -p vsp-iac down -v"
+  },
+  "keywords": [
+    "vsp",
+    "terraform",
+    "iac",
+    "simulation",
+    "sovereign-systems",
+    "multi-cloud"
+  ],
+  "author": "VSP (Virgiawan Sagarmata Patabuga)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vspatabuga/sovereign-cloud-fabric.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "files": [
+    "simulate.sh",
+    "docker-compose.yml",
+    "terraform/"
+  ]
+}
