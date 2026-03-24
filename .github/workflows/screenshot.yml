@@ -1,0 +1,138 @@
+name: Generate Screenshots
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_download:
+        description: 'Skip downloading models (use cached)'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  SIM_DIR: /tmp/vsp-simulation
+  SCREENSHOTS_DIR: ./simulation/screenshots
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Check Docker
+        run: docker --version
+
+      - name: Start simulation
+        run: |
+          echo "Starting simulation..."
+          chmod +x ./simulate.sh
+          
+          # Check if AI Governance (needs longer wait)
+          if [ -f "docker-compose.yml" ] && grep -q "ollama" docker-compose.yml; then
+            echo "AI Governance detected - will wait longer for services"
+          fi
+          
+          # Start in background and capture PID
+          ./simulate.sh &
+          SIM_PID=$!
+          echo "Simulation PID: $SIM_PID"
+          
+          # Save PID for later
+          echo $SIM_PID > /tmp/sim_pid
+
+      - name: Wait for services
+        run: |
+          # Default wait time
+          WAIT_TIME=30
+          
+          # Check if AI Governance
+          if grep -q "ollama" docker-compose.yml 2>/dev/null; then
+            echo "AI Governance detected - waiting 5 minutes for model download"
+            WAIT_TIME=300
+          fi
+          
+          echo "Waiting $WAIT_TIME seconds for services..."
+          sleep $WAIT_TIME
+          
+          echo "Services should be ready"
+
+      - name: Install Playwright
+        run: |
+          npm install -g playwright
+          npx playwright install chromium --with-deps
+
+      - name: Generate screenshots
+        run: |
+          echo "Generating screenshots..."
+          
+          # Get main container name from compose project
+          CONTAINER_NAME=$(docker compose -p vsp-$(basename $PWD | tr '[:upper:]' '[:lower:]' | sed 's/-backend-configuration//' | sed 's/-dapps//' | sed 's/-orchestrator//' | sed 's/-fabric//' | sed 's/-network//') ps --format "{{.Names}}" 2>/dev/null | head -1 || echo "web"
+          
+          # Get the host port (usually 3000 or similar)
+          if command -v nc &> /dev/null; then
+            for port in 3000 3001 3002 3003 3004 5678 6006; do
+              if nc -z localhost $port 2>/dev/null; then
+                echo "Port $port is open"
+                MAIN_PORT=$port
+                break
+              fi
+            done
+          fi
+          
+          MAIN_PORT=${MAIN_PORT:-3000}
+          echo "Using port: $MAIN_PORT"
+          
+          # Create screenshots directory
+          mkdir -p $SCREENSHOTS_DIR
+          
+          # Generate screenshot with Playwright
+          npx playwright screenshot \
+            --full-page \
+            --wait-for-timeout 5000 \
+            "http://localhost:$MAIN_PORT" \
+            "$SCREENSHOTS_DIR/homepage.png" 2>/dev/null || true
+          
+          echo "Screenshot generation complete"
+          ls -la $SCREENSHOTS_DIR/ || echo "No screenshots generated"
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots-${{ github.event.repository.name }}
+          path: ${{ env.SCREENSHOTS_DIR }}/*.png
+          retention-days: 30
+
+      - name: Commit screenshots
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          # Check if screenshots exist
+          if [ -d "$SCREENSHOTS_DIR" ] && [ "$(ls -A $SCREENSHOTS_DIR/*.png 2>/dev/null)" ]; then
+            echo "Adding screenshots to git..."
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            git add $SCREENSHOTS_DIR/*.png
+            git diff --staged --quiet || git commit -m "docs: update simulation screenshots [skip ci]"
+            git push || echo "Could not push screenshots"
+          else
+            echo "No screenshots to commit"
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: |
+          echo "Cleaning up..."
+          # Kill simulation if running
+          if [ -f /tmp/sim_pid ]; then
+            kill $(cat /tmp/sim_pid) 2>/dev/null || true
+          fi
+          # Stop docker containers
+          docker compose down 2>/dev/null || true
