@@ -33,18 +33,27 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.version }}" != "" ]; then
             VERSION="${{ github.event.inputs.version }}"
-          else
+          elif [ "${{ github.ref_type }}" == "tag" ]; then
             VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
           fi
           echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
           echo "Publishing version: ${VERSION}"
         env:
           GITHUB_REF: ${{ github.ref }}
+          GITHUB_REF_TYPE: ${{ github.ref_type }}
       
       - name: Update package.json version
         run: |
           PACKAGE_VERSION=${{ steps.version.outputs.VERSION }}
-          npm version $PACKAGE_VERSION --no-git-tag-version
+          CURRENT_VERSION=$(cat package.json | jq -r '.version')
+          if [ "$CURRENT_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "Updating package version from $CURRENT_VERSION to $PACKAGE_VERSION"
+            npm version $PACKAGE_VERSION --no-git-tag-version
+          else
+            echo "Package version already set to $PACKAGE_VERSION"
+          fi
       
       - name: Configure npm for GitHub Packages
         run: |
@@ -53,7 +62,31 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
+      - name: Verify package files
+        run: |
+          echo "=== Package Files ==="
+          cat package.json | head -20
+          echo ""
+          echo "=== Files to be published ==="
+          cat package.json | jq '.files'
+      
       - name: Publish to GitHub Packages
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Display package info
+        if: success()
+        run: |
+          echo "=========================================="
+          echo "Package published successfully!"
+          echo "=========================================="
+          echo "Package: $(cat package.json | jq -r '.name')"
+          echo "Version: $(cat package.json | jq -r '.version')"
+          echo ""
+          echo "Install command:"
+          echo "  npm install $(cat package.json | jq -r '.name')@$(cat package.json | jq -r '.version') --registry https://npm.pkg.github.com"
+          echo ""
+          echo "Or use vsp-porto:"
+          echo "  vsp-porto install $(cat package.json | jq -r '.name' | sed 's/@vspatabuga\/sim-//')"
+          echo "=========================================="
