@@ -1,0 +1,5 @@
+# CODEOWNERS for Patabuga Enterprises
+# All changes require review from the repository owner
+
+# Everything defaults to @vspatabuga
+* @vspatabuga
