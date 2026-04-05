@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "Sovereign Cloud Fabric"
+type: software
+authors:
+  - family-names: Patabuga
+    given-names: Virgiawan Sagarmata
+    affiliation: Patabuga Institute
+    orcid: "https://orcid.org/0009-0003-7843-0919"
+abstract: >
+  Multi-cloud Terraform orchestration framework for managing distributed
+  digital infrastructure across Azure, GCP, and AWS. Ensures control plane
+  independence from any single provider.
+license: MIT
+version: "1.0.0"
+date-released: "2026-04-05"
+url: "https://github.com/patabuga/sovereign-cloud-fabric"
+repository-code: "https://github.com/patabuga/sovereign-cloud-fabric"
+keywords:
+  - multi-cloud
+  - terraform
+  - infrastructure-as-code
+  - cloud-orchestration
+  - sovereign-infrastructure
