@@ -1,5 +1,7 @@
 # 🌐 Sovereign Cloud Fabric
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19427215.svg)](https://doi.org/10.5281/zenodo.19427215)
+
 ## 📌 Project Overview
 **Sovereign Cloud Fabric** is a high-level orchestration framework for managing distributed digital infrastructure. It enables the seamless provisioning and management of resources across multiple cloud providers (Azure, OCI, GCP) using a unified, code-driven approach.
 
