@@ -6,7 +6,7 @@ authors:
   - family-names: Patabuga
     given-names: Virgiawan Sagarmata
     affiliation: Patabuga Institute
-    orcid: "https://orcid.org/0009-0003-7843-0919"
+    orcid: "https://orcid.org/0009-0004-1940-4555"
 abstract: >
   Multi-cloud Terraform orchestration framework for managing distributed
   digital infrastructure across Azure, GCP, and AWS. Ensures control plane
